@@ -10,10 +10,10 @@ if (!is_logged_in()) {
 }
 
 $method = $_SERVER['REQUEST_METHOD'];
-$tz = new DateTimeZone(isset($config['timezone']) ? $config['timezone'] : 'UTC');
+$tz = new DateTimeZone($config['timezone'] ?? 'UTC');
 $uk = current_user_key();
 
-function get_period_bounds($period, $tz) {
+function get_period_bounds(string $period, DateTimeZone $tz): array {
     $now = new DateTime('now', $tz);
     if ($period === 'weekly') {
         $start = (clone $now)->modify('monday this week'); $start->setTime(0,0,0);
