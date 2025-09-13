@@ -9,12 +9,12 @@ if (!is_logged_in()) {
     exit;
 }
 
-$tz = new DateTimeZone($config['timezone'] ?? 'UTC');
+$tz = new DateTimeZone(isset($config['timezone']) ? $config['timezone'] : 'UTC');
 $displayFmt = 'd.m.Y H:i';
 $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 50;
 $limit = max(1, min(200, $limit));
 
-function fetch_logs_for(PDO $pdo, string $uk, int $limit, DateTimeZone $tz, string $displayFmt): array {
+function fetch_logs_for($pdo, $uk, $limit, $tz, $displayFmt) {
     $date = isset($_GET['date']) ? $_GET['date'] : null; // YYYY-MM-DD
     $tStart = isset($_GET['time_start']) ? $_GET['time_start'] : null; // HH:MM
     $tEnd = isset($_GET['time_end']) ? $_GET['time_end'] : null; // HH:MM
@@ -46,13 +46,13 @@ function fetch_logs_for(PDO $pdo, string $uk, int $limit, DateTimeZone $tz, stri
     return $logs;
 }
 
-function average_minutes_per_cig(PDO $pdo, string $uk, DateTimeZone $tz): ?float {
+function average_minutes_per_cig($pdo, $uk, $tz) {
     // Tüm içişlere göre ortalama süre: ilk ve son içiş arasındaki toplam süre / (toplam içiş - 1)
     $stmt = $pdo->prepare("SELECT MIN(created_at) AS min_t, MAX(created_at) AS max_t, COUNT(*) AS total FROM events WHERE user_key = :uk");
     $stmt->execute([':uk' => $uk]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!$row) return null;
-    $total = (int)($row['total'] ?? 0);
+    $total = (int)(isset($row['total']) ? $row['total'] : 0);
     if ($total <= 1) return null;
     $minT = new DateTime($row['min_t'], $tz);
     $maxT = new DateTime($row['max_t'], $tz);

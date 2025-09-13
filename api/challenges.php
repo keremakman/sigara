@@ -10,10 +10,10 @@ if (!is_logged_in()) {
 }
 
 $method = $_SERVER['REQUEST_METHOD'];
-$tz = new DateTimeZone($config['timezone'] ?? 'UTC');
+$tz = new DateTimeZone(isset($config['timezone']) ? $config['timezone'] : 'UTC');
 $uk = current_user_key();
 
-function get_period_bounds(string $period, DateTimeZone $tz): array {
+function get_period_bounds($period, $tz) {
     $now = new DateTime('now', $tz);
     if ($period === 'weekly') {
         $start = (clone $now)->modify('monday this week'); $start->setTime(0,0,0);
@@ -29,7 +29,9 @@ if ($method === 'GET') {
     try {
         if (!empty($_GET['current']) && !empty($_GET['period']) && in_array($_GET['period'], ['weekly','monthly'], true)) {
             $period = $_GET['period'];
-            [$start, $end] = get_period_bounds($period, $tz);
+            $bounds = get_period_bounds($period, $tz);
+            $start = $bounds[0];
+            $end = $bounds[1];
             $find = $pdo->prepare("SELECT * FROM challenges WHERE period=:p AND start_at=:s AND end_at=:e ORDER BY id DESC LIMIT 1");
             $find->execute([':p'=>$period, ':s'=>$start->format('Y-m-d H:i:s'), ':e'=>$end->format('Y-m-d H:i:s')]);
             $challenge = $find->fetch(PDO::FETCH_ASSOC) ?: null;
@@ -41,7 +43,7 @@ if ($method === 'GET') {
             while ($r = $cntStmt->fetch(PDO::FETCH_ASSOC)) { $counts[$r['user_key']] = (int)$r['cnt']; }
 
             $can = [
-                'propose' => ($challenge === null) || in_array(($challenge['status'] ?? ''), ['declined','completed','canceled'], true),
+                'propose' => ($challenge === null) || in_array((isset($challenge['status']) ? $challenge['status'] : ''), ['declined','completed','canceled'], true),
                 'accept' => false,
                 'decline' => false,
                 'cancel' => false,
@@ -77,21 +79,24 @@ if ($method === 'GET') {
     exit;
 }
 
-$token = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+$token = isset($_SERVER['HTTP_X_CSRF_TOKEN']) ? $_SERVER['HTTP_X_CSRF_TOKEN'] : '';
 if (!verify_csrf_token($token)) {
     http_response_code(403);
     echo json_encode(['success' => false, 'error' => 'Invalid CSRF']);
     exit;
 }
 
-$input = json_decode(file_get_contents('php://input'), true) ?? [];
-$action = $input['action'] ?? '';
-$period = $input['period'] ?? 'weekly';
+$input = json_decode(file_get_contents('php://input'), true);
+if ($input === null) $input = array();
+$action = isset($input['action']) ? $input['action'] : '';
+$period = isset($input['period']) ? $input['period'] : 'weekly';
 
 if (!in_array($period, ['weekly','monthly'], true)) { $period = 'weekly'; }
 
 if ($action === 'propose') {
-    [$start, $end] = get_period_bounds($period, $tz);
+    $bounds = get_period_bounds($period, $tz);
+    $start = $bounds[0];
+    $end = $bounds[1];
     $penalty = isset($input['penalty_text']) ? trim((string)$input['penalty_text']) : null;
     try {
         // If there is already an active/pending for this period and window, skip new one
@@ -112,7 +117,7 @@ if ($action === 'propose') {
 }
 
 if (in_array($action, ['accept','decline','cancel','complete'], true)) {
-    $id = (int)($input['id'] ?? 0);
+    $id = (int)(isset($input['id']) ? $input['id'] : 0);
     if ($id <= 0) { http_response_code(400); echo json_encode(['success'=>false,'error'=>'Bad id']); exit; }
     try {
         $stmt = $pdo->prepare("SELECT * FROM challenges WHERE id=:id");
