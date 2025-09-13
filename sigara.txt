@@ -1,0 +1,81 @@
+(async () => {
+  // Küçük yardımcılar
+  function finish(result) {
+    try { if (typeof completion === 'function') completion(result); } catch (_) {}
+    return result;
+  }
+  function ready() {
+    if (document.readyState === 'complete' || document.readyState === 'interactive') return Promise.resolve();
+    return new Promise(res => document.addEventListener('DOMContentLoaded', res, { once: true }));
+  }
+  function waitFor(testFn, { timeout = 1500, interval = 100 } = {}) {
+    return new Promise(resolve => {
+      const start = Date.now();
+      const t = setInterval(() => {
+        try {
+          const v = testFn();
+          if (v) { clearInterval(t); resolve(v); }
+          else if (Date.now() - start >= timeout) { clearInterval(t); resolve(null); }
+        } catch {
+          clearInterval(t); resolve(null);
+        }
+      }, interval);
+    });
+  }
+
+  await ready();
+
+  const myKey = document.querySelector('meta[name="user-key"]')?.content || null;
+  if (!myKey) {
+    return finish({ success: false, reason: 'not_on_dashboard_or_not_logged_in', path: location.pathname });
+  }
+
+  const idSelector = `#btn-${myKey}`;
+  let btn = document.querySelector(idSelector)
+         || document.querySelector('button.app-plus.btn-primary:not([disabled])')
+         || document.querySelector('button.app-plus');
+
+  if (btn && !btn.disabled) {
+    btn.click();
+    // Başarıyı küçük bir teyitle bekleyelim (btn disabled oldu mu ya da mesaj geldi mi?)
+    const msgSel = `#msg-${myKey}`;
+    await waitFor(() => (document.querySelector(idSelector)?.disabled === true)
+                      || ((document.querySelector(msgSel)?.textContent || '').includes('bekleyin')));
+    return finish({ success: true, via: 'click', userKey: myKey, selector: btn.id ? `#${btn.id}` : null });
+  }
+
+  // Buton yoksa veya disabled ise API'ye düş
+  const csrf = document.querySelector('meta[name="csrf-token"]')?.content || null;
+  if (!csrf) {
+    return finish({
+      success: false,
+      via: 'click',
+      reason: btn ? 'button_disabled_and_no_csrf' : 'button_not_found_and_no_csrf',
+      userKey: myKey
+    });
+  }
+
+  try {
+    const res = await fetch('api/increment.php', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-CSRF-Token': csrf
+      },
+      body: JSON.stringify({}),
+      cache: 'no-store'
+    });
+    const json = await res.json().catch(() => null);
+
+    if (res.ok && json && json.success) {
+      return finish({ success: true, via: 'api', userKey: myKey, meta: json.meta || null });
+    }
+    if (res.status === 429 && json) {
+      return finish({ success: false, via: 'api', reason: 'cooldown', userKey: myKey, meta: json.meta || null });
+    }
+    return finish({ success: false, via: 'api', reason: 'api_error', status: res.status, userKey: myKey });
+  } catch {
+    return finish({ success: false, via: 'api', reason: 'network_error', userKey: myKey });
+  }
+})();

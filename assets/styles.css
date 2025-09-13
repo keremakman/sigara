@@ -1,0 +1,112 @@
+:root {
+  --app-bg-1: #0ea5ea;
+  --app-bg-2: #6a00f4;
+  --surface: rgba(255,255,255,0.82);
+  --border: rgba(0,0,0,0.08);
+  --shadow: 0 10px 30px rgba(16, 24, 40, 0.12);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --surface: rgba(22, 27, 34, 0.75);
+    --border: rgba(255,255,255,0.08);
+    --shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  }
+}
+
+html, body { height: 100%; }
+body { font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; color: #f8fafc; }
+
+/* Gradient arka plan */
+.app-bg {
+  background: radial-gradient(1200px 600px at 10% 10%, rgba(255,255,255,0.5), transparent 60%),
+              radial-gradient(1000px 500px at 90% 0%, rgba(255,255,255,0.4), transparent 50%),
+              linear-gradient(135deg, var(--app-bg-1), var(--app-bg-2));
+  min-height: 100vh;
+}
+
+/* Üst bar */
+.navbar {
+  backdrop-filter: saturate(140%) blur(8px);
+  -webkit-backdrop-filter: saturate(140%) blur(8px);
+  background-color: rgba(255,255,255,0.18) !important;
+  border-bottom: 1px solid var(--border);
+}
+@media (prefers-color-scheme: dark) {
+  .navbar { background-color: rgba(0,0,0,0.18) !important; }
+}
+
+/* Kartlar (glassmorphism) */
+.app-card {
+  background: rgba(16, 18, 27, 0.85);
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 16px;
+  color: #f8fafc;
+}
+
+/* Başlık ve buton alanı */
+.card-title { font-weight: 700; letter-spacing: 0.2px; }
+.app-plus {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.app-plus:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(13,110,253,0.25); }
+.app-plus:active { transform: translateY(0); }
+
+/* İstatistikler */
+.stat-label { font-size: 0.8rem; color: #cbd5e1; text-transform: uppercase; letter-spacing: 0.4px; }
+.stat-value { font-size: 2.25rem; font-weight: 800; line-height: 1.1; }
+.stat-block { padding: 6px 0; border-radius: 12px; }
+.stat-block.today .stat-value { color: #f59e0b; }
+.stat-block.yesterday .stat-value { color: #6b7280; }
+.stat-block.last-week .stat-value { color: #0ea5ea; }
+.stat-block.this-month .stat-value { color: #3b82f6; }
+.stat-block.total .stat-value { color: #10b981; }
+
+/* Bilgi mesajı (cooldown vs.) */
+[id^="msg-"] { min-height: 1.25rem; color: #6b7280; }
+
+/* Kayıt listesi */
+#\31 -logs, #\32 -logs { /* escape edilmiş id olasılıkları için şaka yollu koruma */ }
+.list-group-flush .list-group-item {
+  background: transparent;
+  border-color: var(--border);
+}
+.list-group-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.list-group-item::before {
+  content: '\F1DA'; /* bi-dot */
+  font-family: 'bootstrap-icons';
+  font-size: 1rem;
+  color: #94a3b8;
+}
+
+/* Login kartı spacing */
+.form-control, .btn { border-radius: 12px; }
+.btn-primary { box-shadow: 0 6px 16px rgba(13,110,253,0.25); }
+
+/* Küçük ekran iyileştirmeleri */
+@media (max-width: 576px) {
+  .stat-value { font-size: 1.9rem; }
+}
+
+/* Kart başlığı tıklanabilir */
+.card-header-toggle { cursor: pointer; }
+
+/* Dark bg için metin ve form renkleri */
+.navbar .navbar-brand, .navbar .nav-link { color: #fff !important; }
+.navbar .btn { color: #fff !important; border-color: rgba(255,255,255,0.5) !important; }
+.text-muted { color: #94a3b8 !important; }
+.list-group-item { color: #f8fafc; }
+.list-group-item::before { color: #9ca3af; }
+.form-label, .form-check-label { color: #e5e7eb; }
+.form-control { background-color: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.2); color: #f8fafc; }
+.form-control::placeholder { color: #94a3b8; }
+.btn-outline-secondary { color: #e5e7eb; border-color: #94a3b8; }
+.btn-outline-secondary:hover { background-color: rgba(255,255,255,0.1); color: #fff; border-color: #cbd5e1; }
+
